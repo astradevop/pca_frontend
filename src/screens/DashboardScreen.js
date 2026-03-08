@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getCustomers } from '../api';
+import { getCustomers, setAuthToken } from '../api';
 
 const DashboardScreen = ({ navigation }) => {
   const [customers, setCustomers] = useState([]);
@@ -15,7 +15,11 @@ const DashboardScreen = ({ navigation }) => {
       setCustomers(data);
       setError('');
     } catch (err) {
-      setError('Failed to fetch customers. Ensure the backend is running.');
+      if (err.response?.status === 401) {
+        setError('Session expired. Please log in again.');
+      } else {
+        setError('Failed to fetch customers. Ensure the backend is running.');
+      }
     } finally {
       setLoading(false);
     }
@@ -26,6 +30,11 @@ const DashboardScreen = ({ navigation }) => {
       fetchCustomers();
     }, [])
   );
+
+  const handleLogout = () => {
+    setAuthToken(null);
+    navigation.replace('Login');
+  };
 
   const renderItem = ({ item }) => (
     <View style={styles.card}>
@@ -51,20 +60,31 @@ const DashboardScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Customer Loans</Text>
-      
+      <View style={styles.topBar}>
+        <Text style={styles.header}>Customer Loans</Text>
+        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+          <Text style={styles.logoutText}>Logout</Text>
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.buttonRow}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.primaryButton}
           onPress={() => navigation.navigate('MakePayment')}
         >
           <Text style={styles.buttonText}>+ Make Payment</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
+          style={styles.greenButton}
+          onPress={() => navigation.navigate('AddCustomer')}
+        >
+          <Text style={styles.buttonText}>+ Add Customer</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
           style={styles.secondaryButton}
           onPress={() => navigation.navigate('PaymentHistory')}
         >
-          <Text style={styles.buttonTextSecondary}>Search History</Text>
+          <Text style={styles.buttonTextSecondary}>History</Text>
         </TouchableOpacity>
       </View>
 
@@ -95,7 +115,25 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 24,
     fontWeight: 'bold',
+  },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 16,
+  },
+  logoutBtn: {
+    backgroundColor: '#21262d',
+    borderWidth: 1,
+    borderColor: '#da3633',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  logoutText: {
+    color: '#da3633',
+    fontWeight: 'bold',
+    fontSize: 13,
   },
   buttonRow: {
     flexDirection: 'row',
@@ -106,7 +144,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#238636',
     padding: 12,
     borderRadius: 8,
-    flex: 0.48,
+    flex: 0.32,
+    alignItems: 'center',
+  },
+  greenButton: {
+    backgroundColor: '#1f6feb',
+    padding: 12,
+    borderRadius: 8,
+    flex: 0.32,
     alignItems: 'center',
   },
   secondaryButton: {
@@ -115,7 +160,7 @@ const styles = StyleSheet.create({
     borderColor: '#30363d',
     padding: 12,
     borderRadius: 8,
-    flex: 0.48,
+    flex: 0.3,
     alignItems: 'center',
   },
   buttonText: {
